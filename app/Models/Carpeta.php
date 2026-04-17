@@ -10,7 +10,7 @@ class Carpeta extends Model
 
     protected $fillable = [
         'nombre',
-        'usuario_id',
+        'user_id',
     ];
 
     public function usuario()
