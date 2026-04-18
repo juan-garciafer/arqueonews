@@ -78,7 +78,7 @@ class CarpetaController extends Controller
             'nombre' => $request->nombre,
         ]);
 
-        return redirect()->route('carpetas.index')->with('success', 'Carpeta actualizada exitosamente.');
+        return redirect()->back()->with('success', 'Carpeta actualizada exitosamente.');
     }
 
     /**

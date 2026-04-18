@@ -35,9 +35,11 @@
                             {{-- VIEW MODE --}}
                             <div x-show="!editing">
 
-                                <h3 class="text-lg font-semibold text-gray-800">
-                                    {{ $carpeta->nombre }}
-                                </h3>
+                                <a href="{{ route('carpetas.show', $carpeta->id) }}">
+                                    <h3 class="text-lg font-semibold text-gray-800 hover:underline">
+                                        {{ $carpeta->nombre }}
+                                    </h3>
+                                </a>
 
                                 <p class="text-sm text-gray-500 mt-1">
                                     Creada: {{ $carpeta->created_at->format('d/m/Y') }}

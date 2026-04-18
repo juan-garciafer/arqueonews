@@ -11,32 +11,80 @@
             {{-- INFO DE LA CARPETA --}}
             <div class="bg-white shadow rounded-lg p-6 mb-6">
 
-                <div class="flex justify-between items-start">
+                <div x-data="{ editing: false }">
 
-                    <div>
-                        <h1 class="text-2xl font-bold text-gray-900">
-                            {{ $carpeta->nombre }}
-                        </h1>
+                    {{-- VIEW MODE --}}
+                    <div x-show="!editing" class="flex justify-between items-start">
 
-                        <p class="text-sm text-gray-500 mt-1">
-                            Creada el {{ $carpeta->created_at->format('d/m/Y') }}
-                        </p>
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">
+                                {{ $carpeta->nombre }}
+                            </h1>
+
+                            <p class="text-sm text-gray-500 mt-1">
+                                Creada el {{ $carpeta->created_at->format('d/m/Y') }}
+                            </p>
+                        </div>
+
+                        <div class="flex items-center space-x-4">
+
+                            <div class="text-gray-400 text-2xl">
+                                📁
+                            </div>
+
+                            <button type="button"
+                                    class="text-yellow-600 hover:underline"
+                                    @click="editing = true">
+                                Editar
+                            </button>
+
+                        </div>
+
                     </div>
 
-                    <div class="text-gray-400 text-2xl">
-                        📁
+                    {{-- EDIT MODE --}}
+                    <div x-show="editing" class="space-y-3">
+
+                        <form method="POST"
+                              action="{{ route('carpetas.update', $carpeta->id) }}">
+
+                            @csrf
+                            @method('PUT')
+
+                            <input type="text"
+                                   name="nombre"
+                                   value="{{ $carpeta->nombre }}"
+                                   class="w-full border-gray-300 rounded"
+                                   x-ref="input"
+                                   x-init="$nextTick(() => $refs.input.focus())"
+                                   required>
+
+                            <div class="flex justify-between mt-3">
+
+                                <button type="button"
+                                        class="text-gray-600"
+                                        @click="editing = false">
+                                    Cancelar
+                                </button>
+
+                                <button type="submit"
+                                        class="bg-blue-600 text-white px-3 py-1 rounded">
+                                    Guardar
+                                </button>
+
+                            </div>
+
+                        </form>
+
                     </div>
 
                 </div>
 
                 <div class="mt-4 flex space-x-4">
 
-                    <a href="{{ route('carpetas.index') }}" class="text-gray-600 hover:underline">
+                    <a href="{{ route('carpetas.index') }}"
+                       class="text-gray-600 hover:underline">
                         ← Volver
-                    </a>
-
-                    <a href="{{ route('carpetas.edit', $carpeta->id) }}" class="text-yellow-600 hover:underline ml-4">
-                        Editar
                     </a>
 
                 </div>
@@ -54,7 +102,6 @@
                     Aquí aparecerán las noticias guardadas en esta carpeta.
                 </p>
 
-                {{-- placeholder --}}
                 <div class="mt-4 text-center text-gray-400">
                     Sin noticias todavía
                 </div>

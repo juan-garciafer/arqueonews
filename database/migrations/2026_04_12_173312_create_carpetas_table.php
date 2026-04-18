@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('carpetas', function (Blueprint $table) {
             $table->id();
-            $table->string('nombre', 50);
+            $table->string('nombre', 255);
 
             $table->foreignId('user_id')
                 ->constrained('users')

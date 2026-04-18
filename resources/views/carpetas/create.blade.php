@@ -21,7 +21,8 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ route('carpetas.store') }}">
+                <form method="POST" action="{{ route('carpetas.store') }}" x-data="{ loading: false }"
+                    @submit="loading = true">
                     @csrf
 
                     {{-- Nombre --}}
@@ -31,8 +32,14 @@
                         </label>
 
                         <input type="text" name="nombre" value="{{ old('nombre') }}"
-                            class="w-full border-gray-300 rounded shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200"
-                            placeholder="Ej: Tecnología, Deportes..." required>
+                            class="w-full border-gray-300 rounded shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-200 @error('nombre') border-red-500 @enderror"
+                            placeholder="Ej: Roma, Grecia, Siglo XV,..." required maxlength="255">
+
+                        @error('nombre')
+                            <p class="text-red-500 text-sm mt-1">
+                                {{ $message }}
+                            </p>
+                        @enderror
                     </div>
 
                     {{-- Botones --}}
@@ -42,8 +49,10 @@
                             Cancelar
                         </a>
 
-                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
-                            Crear carpeta
+                        <button type="submit" :disabled="loading"
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded disabled:opacity-50">
+                            <span x-show="!loading">Crear carpeta</span>
+                            <span x-show="loading">Creando...</span>
                         </button>
 
                     </div>
