@@ -9,13 +9,17 @@ class Noticia extends Model
     protected $table = 'noticias';
 
     protected $fillable = [
-        'fuente_id',
+        'external_id',
         'titulo',
         'descripcion',
-        'url_imagen',
         'url_noticia',
+        'url_imagen',
         'pais',
         'fecha_publicacion',
+        'categoria',
+        'source',
+        'codigo_pais',
+        'prioridad',
     ];
 
     public function fuente()

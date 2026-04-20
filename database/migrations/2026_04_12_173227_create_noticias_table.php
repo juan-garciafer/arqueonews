@@ -21,13 +21,28 @@ return new class extends Migration
                 ->cascadeOnUpdate();
 
             $table->string('titulo', 255);
-            $table->string('descripcion', 500)->nullable();
-            $table->string('url_imagen', 255)->nullable();
-            $table->string('url_noticia', 255)->unique();
-            $table->string('pais', 50);
+            $table->text('descripcion')->nullable();
+
+            $table->text('url_imagen')->nullable();
+            $table->text('url_noticia');
+
+            $table->string('pais', 75)->nullable();
             $table->dateTime('fecha_publicacion');
 
+            $table->string('external_id', 32)->unique();
+
+            $table->string('hash')->unique()->nullable();
+
+            $table->enum('source', ['feedly', 'rss', 'manual', 'serpapi'])->default('serpapi');
+
+
+            $table->string('codigo_pais', 2)->nullable();
+
+            $table->string('categoria', 255)->nullable();
+
             $table->timestamps();
+
+            $table->unique(['source', 'external_id']);
         });
     }
 

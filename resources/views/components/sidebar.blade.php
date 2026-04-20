@@ -11,6 +11,12 @@
             🏠 Inicio
         </a>
 
+        {{-- Noticias --}}
+
+         <a href="{{ route('noticias.index') }}" class="block px-3 py-2 rounded hover:bg-gray-100">
+            📰 Noticias
+
+
         {{-- Carpetas --}}
         <a href="{{ route('carpetas.index') }}" class="block px-3 py-2 rounded hover:bg-gray-100">
             📁 Mis carpetas

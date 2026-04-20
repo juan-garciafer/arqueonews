@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    // 'apitube' => [
+    //     'key' => env('APITUBE_API_KEY'),
+    //     'base_url' => env('APITUBE_BASE_URL', 'https://api.apitube.io/v1'),
+    // ]
+    'serpapi' => [
+        'key' => env('SERPAPI_KEY'),
+    ],
+
 ];
