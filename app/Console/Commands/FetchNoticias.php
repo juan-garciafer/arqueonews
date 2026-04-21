@@ -5,18 +5,29 @@ namespace App\Console\Commands;
 use App\Models\Noticia;
 use App\Services\SerpApiService;
 use App\Services\NewsScraperService;
+use App\Services\PaisDetectorService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Str;
 
 class FetchNoticias extends Command
 {
     protected $signature = 'app:fetch-noticias';
     protected $description = 'Fetch noticias arqueológicas desde SerpAPI';
 
+    protected PaisDetectorService $paisDetector;
+
+    // public function __construct(PaisDetectorService $paisDetector)
+    // {
+    //     parent::__construct();
+    //     $this->paisDetector = $paisDetector;
+    // }
+
     public function handle()
     {
+        
         $this->info('Iniciando fetch SerpApi...');
+
+        $this->paisDetector = app(PaisDetectorService::class);
 
         $service = app(SerpApiService::class);
         $scraper = app(NewsScraperService::class);
@@ -60,17 +71,17 @@ class FetchNoticias extends Command
 
                 $externalId = md5($link);
 
-                // ❌ evitar duplicados rápidos
-                if (Noticia::where('external_id', $externalId)->exists()) {
-                    continue;
-                }
+                // evitar duplicados
+                // if (Noticia::where('external_id', $externalId)->exists()) {
+                //     continue;
+                // }
 
                 $title = $news['title'] ?? 'Sin título';
 
-                // 🟢 snippet
+                // snippet
                 $descripcion = $news['snippet'] ?? null;
 
-                // 🟢 scraping si no hay snippet
+                // scraping si no hay snippet
                 if (!$descripcion) {
                     $descripcion = Cache::remember(
                         "desc_{$externalId}",
@@ -80,6 +91,10 @@ class FetchNoticias extends Command
                 }
 
                 $descripcion = $descripcion ?? $title;
+
+                // 🔥 DETECCIÓN DE PAÍS (CORREGIDO)
+                $text = $title . '. ' . $descripcion;
+                $pais = $this->paisDetector->detectarPais($text);
 
                 $source = data_get($news, 'source.name', 'general');
                 $thumbnail = $news['thumbnail'] ?? null;
@@ -99,9 +114,9 @@ class FetchNoticias extends Command
                             'fecha_publicacion' => $publishedAt
                                 ? date('Y-m-d H:i:s', strtotime($publishedAt))
                                 : now(),
-                            'categoria' => $source,
-                            'pais' => null,
-                            'codigo_pais' => null,
+                            'categoria' => 'arqueología',
+                            'pais' => $pais?->nombre,
+                            'codigo_pais' => $pais?->codigo_iso ?? null,
                         ]
                     );
 
@@ -115,99 +130,3 @@ class FetchNoticias extends Command
         $this->info('Fetch completado');
     }
 }
-
-// namespace App\Console\Commands;
-
-// use App\Models\Noticia;
-// use App\Services\SerpApiService;
-// use App\Services\NewsScraperService;
-// use Illuminate\Console\Command;
-// use Illuminate\Support\Facades\Cache;
-
-// class FetchNoticias extends Command
-// {
-//     protected $signature = 'app:fetch-noticias';
-
-//     protected $description = 'Fetch noticias desde SerpApi';
-
-//     public function handle()
-//     {
-//         $this->info('Iniciando fetch SerpApi...');
-
-//         $service = app(SerpApiService::class);
-//         $scraper = app(NewsScraperService::class);
-
-
-
-//         $items = data_get($service->getGoogleNews('arqueología'), 'news_results', []);
-
-//         foreach ($items as $news) {
-
-//             $originalLink = $news['link'] ?? null;
-
-//             if (!$originalLink) {
-//                 continue;
-//             }
-
-//             // 🔥 limpiar tracking UNA sola vez
-//             $link = strtok($originalLink, '?');
-
-//             if (!$link) {
-//                 continue;
-//             }
-
-//             $externalId = md5($link);
-
-//             $title = $news['title'] ?? 'Sin título';
-
-//             // 🟢 1. intentar snippet
-//             $descripcion = $news['snippet'] ?? null;
-
-//             // 🟢 2. si no hay snippet → cache + scraping
-//             if (!$descripcion) {
-//                 $descripcion = Cache::remember(
-//                     "desc_{$externalId}",
-//                     86400, // 24h
-//                     function () use ($scraper, $link) {
-//                         return $scraper->getDescripcion($link);
-//                     }
-//                 );
-//             }
-
-//             // 🟢 3. fallback final
-//             $descripcion = $descripcion ?? $title;
-
-//             $source = data_get($news, 'source.name', 'general');
-//             $thumbnail = $news['thumbnail'] ?? null;
-//             $publishedAt = $news['iso_date'] ?? null;
-
-//             try {
-
-//                 Noticia::updateOrCreate(
-//                     [
-//                         'external_id' => $externalId,
-//                         'source' => 'serpapi',
-//                     ],
-//                     [
-//                         'titulo' => $title,
-//                         'descripcion' => $descripcion,
-//                         'url_noticia' => $link,
-//                         'url_imagen' => $thumbnail,
-//                         'fecha_publicacion' => $publishedAt
-//                             ? date('Y-m-d H:i:s', strtotime($publishedAt))
-//                             : now(),
-//                         'categoria' => $source,
-//                         'pais' => null,
-//                         'codigo_pais' => null,
-//                     ]
-//                 );
-
-//                 $this->info("Noticia guardada: {$externalId}");
-//             } catch (\Throwable $e) {
-//                 $this->error($e->getMessage());
-//             }
-//         }
-
-//         $this->info('Fetch completado');
-//     }
-// }

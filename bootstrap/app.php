@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withSchedule(function (Schedule $schedule) {
-        $schedule->command('app:fetch-noticias')->everyDayAt(time: '09:00');
+        $schedule->command('app:fetch-noticias')->dailyAt('09:00');
     })
     ->withMiddleware(function (Middleware $middleware): void {
         //
