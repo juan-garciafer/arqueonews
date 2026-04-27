@@ -36,19 +36,15 @@ class NoticiasController extends Controller
                     'noticias' => $group->map(fn($n) => [
                         'titulo' => $n->titulo,
                         'descripcion' => $n->descripcion,
-                        'noticia' => $n->url_noticia,
+                        'url' => $n->url_noticia,
                         'imagen' => $n->url_imagen,
-                    ])->values(),
+                    ])->values()->toArray(),
                 ];
             })
             ->filter()
             ->values();
 
         // dd($markers);
-        //             dd([
-        //     'markers' => $markers,
-        //     'view' => 'noticias.index'
-        // ]);
 
         return view('noticias.index', [
             'noticias' => $noticias,

@@ -1,11 +1,4 @@
-<div id="map" style="height: 500px;"></div>
-
-{{-- 
-@push('scripts')
-    <script>
-        const markers = @json($markers ?? []);
-    </script>
-@endpush --}}
+@props(['markers' => []])
 
 <div id="map" style="height: 500px; width: 100%;"></div>
 
@@ -13,7 +6,11 @@
     <script>
         const markers = @json($markers ?? []);
 
+        console.log('Markers data:', markers);
+
         window.addEventListener('load', () => {
+
+            console.log('L:', typeof L);
 
             if (typeof L === 'undefined') {
                 console.error('Leaflet no cargado');
@@ -25,6 +22,10 @@
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; OpenStreetMap'
             }).addTo(map);
+
+            console.log('Map created');
+
+            console.log('Adding markers:', markers.length);
 
             const createNumberIcon = (count) => {
                 return L.divIcon({
@@ -62,7 +63,7 @@
                 <div style="display:flex; gap:10px; margin-bottom:10px;">
                     <img 
                         src="${n.imagen}" 
-                        onerror="this.onerror=null; this.src='/img/default.jpg';"
+                        onerror="this.style.display='none';"
                         style="width:50px;height:50px;object-fit:cover;border-radius:6px;"
                     >
                     <div>

@@ -24,7 +24,7 @@
                 </h2>
 
                 @if ($noticia->url_imagen)
-                    <img src="{{ $noticia->url_imagen }}" width="200">
+                    <img src="{{ $noticia->url_imagen }}" width="200" onerror="this.style.display='none';">
                 @endif
 
                 <p>{{ $noticia->descripcion }}</p>
