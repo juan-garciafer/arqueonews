@@ -54,7 +54,7 @@ LIMIT 1000';
 
             $wikidataId = basename($wikidataUrl);
 
-            // fallback porque NO hay altLabel en tu query
+            
             $aliasName = $item['itemLabel']['value'] ?? null;
 
             if (!$aliasName) continue;

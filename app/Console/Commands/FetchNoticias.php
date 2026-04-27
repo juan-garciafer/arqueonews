@@ -13,14 +13,8 @@ class FetchNoticias extends Command
 {
     protected $signature = 'app:fetch-noticias';
     protected $description = 'Fetch noticias arqueológicas desde SerpAPI';
-
     protected PaisDetectorService $paisDetector;
 
-    // public function __construct(PaisDetectorService $paisDetector)
-    // {
-    //     parent::__construct();
-    //     $this->paisDetector = $paisDetector;
-    // }
 
     public function handle()
     {

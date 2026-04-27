@@ -1,4 +1,7 @@
 <x-app-layout>
+    
+
+    {{-- {{ dd('ESTOY EN LA VISTA CORRECTA', $markers ?? null) }} --}}
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 leading-tight">
             {{ __('Dashboard') }}
@@ -6,6 +9,9 @@
     </x-slot>
 
     <div class="py-12">
+
+        <x-mapa-leaflet :markers="$markers" />
+
         <h1>Noticias</h1>
 
         @foreach ($noticias as $noticia)

@@ -2,40 +2,57 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\SerpApiService;
-
 use Illuminate\Http\Request;
-
 use App\Models\Noticia;
+use App\Models\Pais;
 
 class NoticiasController extends Controller
 {
-    public function index(SerpApiService $serp)
+    public function index()
     {
+        // dd('ESTOY EN NOTICIAS CONTROLLER');
         $noticias = Noticia::orderBy('fecha_publicacion', 'desc')->paginate(20);
 
-        return view('noticias.index', compact('noticias'));
-        // $data = $serp->getGoogleNews('historia');
+        $paises = Pais::all()->keyBy(fn($p) => strtoupper($p->codigo_iso));
 
-        // $news = $data['news_results'] ?? [];
+        $markers = Noticia::all()
+            ->filter(fn($n) => $n->codigo_pais)
+            ->groupBy(fn($n) => strtoupper($n->codigo_pais))
+            ->map(function ($group, $codigo) use ($paises) {
 
-        // return view('noticias.index', compact('noticias'));
+                $pais = $paises[$codigo] ?? null;
+
+                if (!$pais || !$pais->lat || !$pais->lng) {
+                    return null;
+                }
+
+                return [
+                    'id' => $pais->id,
+                    'lat' => $pais->lat,
+                    'lng' => $pais->lng,
+                    'nombre' => $pais->nombre,
+                    'count' => $group->count(),
+
+                    'noticias' => $group->map(fn($n) => [
+                        'titulo' => $n->titulo,
+                        'descripcion' => $n->descripcion,
+                        'noticia' => $n->url_noticia,
+                        'imagen' => $n->url_imagen,
+                    ])->values(),
+                ];
+            })
+            ->filter()
+            ->values();
+
+        // dd($markers);
+        //             dd([
+        //     'markers' => $markers,
+        //     'view' => 'noticias.index'
+        // ]);
+
+        return view('noticias.index', [
+            'noticias' => $noticias,
+            'markers' => $markers ?? collect()
+        ]);
     }
-
-    // public function index(Request $request)
-    // {
-    //     $noticias = Noticia::query()
-    //         ->when(
-    //             $request->categoria,
-    //             fn($q) => $q->where('categoria', $request->categoria)
-    //         )
-    //         ->when(
-    //             $request->fecha,
-    //             fn($q) => $q->whereDate('fecha_publicacion', $request->fecha)
-    //         )
-    //         ->orderBy('fecha_publicacion', 'desc')
-    //         ->paginate(20);
-
-    //     return view('noticias.index', compact('noticias'));
-    // }
 }

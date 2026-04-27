@@ -31,4 +31,9 @@ class Noticia extends Model
     {
         return $this->belongsToMany(Carpeta::class, 'carpeta_noticias');
     }
+
+    public function pais()
+    {
+        return $this->belongsTo(Pais::class, 'codigo_pais', 'codigo_iso');
+    }
 }

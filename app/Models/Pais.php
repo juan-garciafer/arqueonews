@@ -11,6 +11,8 @@ class Pais extends Model
     protected $fillable = [
         'nombre',
         'codigo_iso',
+        'lat',
+        'lng',
     ];
 
     public function keywords()

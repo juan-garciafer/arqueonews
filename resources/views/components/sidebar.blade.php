@@ -15,6 +15,7 @@
 
          <a href="{{ route('noticias.index') }}" class="block px-3 py-2 rounded hover:bg-gray-100">
             📰 Noticias
+        </a>
 
 
         {{-- Carpetas --}}
