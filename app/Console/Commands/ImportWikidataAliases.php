@@ -14,79 +14,137 @@ class ImportWikidataAliases extends Command
 
     public function handle()
     {
-        $this->info("Importando aliases desde Wikidata...");
+        $this->info("Importando aliases desde Wikidata...\n");
 
-        $query = '
-SELECT ?item ?itemLabel ?country WHERE {
-  ?item wdt:P31/wdt:P279* wd:Q33506.
+        $offset = 0;
+        $limit = 100;
+        $hasMore = true;
+        $totalProcessed = 0;
+
+        while ($hasMore) {
+            $query = "
+SELECT ?item ?itemLabel ?aliasLabel ?country WHERE {
+  VALUES ?type { wd:Q33506 wd:Q515 wd:Q41176 }
+  ?item wdt:P31 ?type.
   ?item wdt:P17 ?country.
+  OPTIONAL { ?item skos:altLabel ?aliasLabel. FILTER(LANG(?aliasLabel) IN (\"es\", \"en\")) }
 
   SERVICE wikibase:label {
-    bd:serviceParam wikibase:language "es,en".
+    bd:serviceParam wikibase:language \"es,en\".
   }
 }
-LIMIT 1000';
+LIMIT $limit OFFSET $offset";
 
-        $response = Http::withHeaders([
-            'Accept' => 'application/sparql-results+json',
-            'User-Agent' => 'Laravel Wikidata Importer (arqueonews)'
-        ])
-            ->timeout(60)
-            ->asForm()
-            ->post('https://query.wikidata.org/sparql', [
-                'query' => $query
-            ]);
+            $this->line("📍 Procesando offset: $offset...");
 
-        if (!$response->successful()) {
-            $this->error("Error HTTP en Wikidata");
-            return;
-        }
+            $response = null;
+            $attempts = 0;
+            $delay = 1;
 
-        $data = $response->json();
+            while ($attempts < 4) {
+                $attempts++;
 
-        $grouped = [];
+                $response = Http::withHeaders([
+                    'Accept' => 'application/sparql-results+json',
+                    'User-Agent' => 'Laravel Wikidata Importer (arqueonews)'
+                ])
+                    ->timeout(120)
+                    ->asForm()
+                    ->post('https://query.wikidata.org/sparql', [
+                        'query' => $query
+                    ]);
 
-        foreach ($data['results']['bindings'] as $item) {
+                if ($response->successful()) {
+                    break;
+                }
 
-            $wikidataUrl = $item['item']['value'] ?? null;
+                $status = $response->status();
+                $this->warn("   ⚠ Petición fallida (HTTP $status) en offset $offset, intento $attempts/4");
 
-            if (!$wikidataUrl) continue;
+                if ($status >= 500 && $status < 600 && $attempts < 4) {
+                    sleep($delay);
+                    $delay *= 2;
+                    continue;
+                }
 
-            $wikidataId = basename($wikidataUrl);
+                break;
+            }
 
-            
-            $aliasName = $item['itemLabel']['value'] ?? null;
+            if (!$response || !$response->successful()) {
+                $status = $response ? $response->status() : 'desconocido';
+                $this->warn("   ❌ No se pudo completar la petición en offset $offset (HTTP $status)");
 
-            if (!$aliasName) continue;
+                if ($limit > 25) {
+                    $limit = max(25, (int) floor($limit / 2));
+                    $this->warn("   ⚠ Reducción de lote a $limit y reintento en mismo offset");
+                    sleep(2);
+                    continue;
+                }
 
-            $aliasName = mb_strtolower(trim($aliasName));
-            $aliasName = preg_replace('/\s+/', ' ', $aliasName);
+                break;
+            }
 
-            $grouped[$wikidataId][] = $aliasName;
-        }
+            $data = $response->json();
+            $bindings = $data['results']['bindings'] ?? [];
 
-        $keywords = Keyword::all()->keyBy('wikidata_id');
+            if (empty($bindings)) {
+                $hasMore = false;
+                break;
+            }
 
-        foreach ($grouped as $wikidataId => $aliases) {
+            $grouped = [];
 
-            $keyword = $keywords[$wikidataId] ?? null;
+            foreach ($bindings as $item) {
+                $wikidataUrl = $item['item']['value'] ?? null;
 
-            if (!$keyword) continue;
+                if (!$wikidataUrl) continue;
 
-            foreach (array_unique($aliases) as $aliasName) {
+                $wikidataId = basename($wikidataUrl);
+                $aliasName = $item['aliasLabel']['value'] ?? null;
 
-                if (strlen($aliasName) < 3) continue;
+                if (!$aliasName) continue;
 
-                Alias::updateOrCreate(
-                    [
-                        'keyword_id' => $keyword->id,
-                        'nombre' => $aliasName
-                    ]
-                );
+                $aliasName = mb_strtolower(trim($aliasName));
+                $aliasName = preg_replace('/\s+/', ' ', $aliasName);
 
-                $this->info("Alias guardado: $aliasName");
+                $grouped[$wikidataId][] = $aliasName;
+            }
+
+            $keywords = Keyword::whereIn('wikidata_id', array_keys($grouped))->get()->keyBy('wikidata_id');
+
+            $count = 0;
+            foreach ($grouped as $wikidataId => $aliases) {
+
+                $keyword = $keywords[$wikidataId] ?? null;
+
+                if (!$keyword) continue;
+
+                foreach (array_unique($aliases) as $aliasName) {
+
+                    if (strlen($aliasName) < 3) continue;
+
+                    Alias::updateOrCreate(
+                        [
+                            'keyword_id' => $keyword->id,
+                            'nombre' => $aliasName
+                        ]
+                    );
+
+                    $count++;
+                    $totalProcessed++;
+                }
+            }
+
+            $this->line("   ✅ Guardados: $count aliases");
+
+            if (count($bindings) < $limit) {
+                $hasMore = false;
+            } else {
+                $offset += $limit;
+                sleep(1); // Esperar 1 segundo entre peticiones
             }
         }
-        $this->info("Importación completada.");
+
+        $this->info("\n✅ Importación completada. Total: $totalProcessed aliases.");
     }
 }

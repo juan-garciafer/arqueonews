@@ -18,7 +18,7 @@
             {{-- Botón crear --}}
             <div class="mb-6 flex justify-end">
                 <a href="{{ route('carpetas.create') }}"
-                    class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    class="bg-blue-600 text-white px-4 py-2 rounded">
                     + Nueva carpeta
                 </a>
             </div>
@@ -36,7 +36,7 @@
                             <div x-show="!editing">
 
                                 <a href="{{ route('carpetas.show', $carpeta->id) }}">
-                                    <h3 class="text-lg font-semibold text-gray-800 hover:underline">
+                                    <h3 class="text-lg font-semibold text-gray-800">
                                         {{ $carpeta->nombre }}
                                     </h3>
                                 </a>
@@ -48,12 +48,12 @@
                                 <div class="mt-4 flex justify-between">
 
                                     <a href="{{ route('carpetas.show', $carpeta->id) }}"
-                                        class="text-blue-600 hover:underline">
+                                        class="text-blue-600">
                                         Ver
                                     </a>
 
                                     {{-- EDITAR INLINE --}}
-                                    <button type="button" class="text-yellow-600 hover:underline"
+                                    <button type="button" class="text-yellow-600"
                                         @click="editing = true">
                                         Editar
                                     </button>
@@ -61,7 +61,7 @@
                                     {{-- ELIMINAR --}}
                                     <div x-data="{ open: false }">
 
-                                        <button type="button" class="text-red-600 hover:underline"
+                                        <button type="button" class="text-red-600"
                                             @click="open = true">
                                             Eliminar
                                         </button>

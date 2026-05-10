@@ -1,3 +1,101 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+@layer base {
+    html,
+    body {
+        font-family: 'Jacques Francois', serif;
+        background-color: #F7F7FF;
+    }
+
+    a {
+        color: #587246;
+        transition: color 0.2s ease;
+    }
+
+    a:hover {
+        /* color: #1d4fb4; */
+        zoom: 1.1;
+    }
+
+
+    button,
+    input[type='button'],
+    input[type='submit'],
+    input[type='reset'],
+    .btn {
+        /* background-color: #606E8C; */
+        border-color: #606E8C;
+        color: #ffffff;
+        transition: background-color 0.2s ease, border-color 0.2s ease;
+    }
+
+    button:hover,
+    input[type='button']:hover,
+    input[type='submit']:hover,
+    input[type='reset']:hover,
+    .btn:hover {
+        zoom: 1.1;
+    }
+}
+
+@layer components {
+    .bg-primary {
+        background-color: #587246;
+    }
+    .text-primary {
+        color: #587246;
+    }
+    .border-primary {
+        border-color: #587246;
+    }
+    .text-secondary {
+        color: #F7F7FF;
+    }
+    .bg-secondary {
+        background-color: #F7F7FF;
+    }
+    .text-tertiary {
+        color: #587246;
+    }
+    .bg-tertiary {
+        background-color: #587246;
+    }
+
+    .tarjeta-noticia {
+        background-color: #F7F7FF;
+        border-color: #606E8C;
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 10px;
+        box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+        transition: box-shadow 0.2s ease;
+    }
+    .tarjeta-noticia:hover {
+        box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.2);
+        background-color: #e5e5e5;
+    }
+    .tarjeta-noticia-titulo {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #587246;
+    }
+    .tarjeta-noticia-descripcion {
+        font-size: 1rem;
+        color: #606E8C;
+    }
+    .tarjeta-noticia-fecha {
+        font-size: 0.8rem;
+        color: #606E8C;
+    }
+    .tarjeta-noticia-pais {
+        font-size: 0.8rem;
+        color: #606E8C;
+    }
+
+    .guardar-noticia-btn {
+        background-color: #587246;;
+    }
+}

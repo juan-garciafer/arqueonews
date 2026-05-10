@@ -93,4 +93,51 @@ class CarpetaController extends Controller
 
         return redirect()->route('carpetas.index');
     }
+
+    /**
+     * Añadir noticia a carpeta
+     */
+    public function addNoticia(Request $request, string $id)
+    {
+        $carpeta = \App\Models\Carpeta::where('user_id', auth()->id())
+            ->findOrFail($id);
+
+        $request->validate([
+            'noticia_id' => 'required|exists:noticias,id',
+        ]);
+
+        // Adjuntar la noticia a la carpeta sin eliminar las existentes
+        $carpeta->noticias()->syncWithoutDetaching([$request->noticia_id]);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['message' => 'Noticia agregada a la carpeta'], 200);
+        }
+
+        return redirect()->back()->with('success', 'Noticia agregada a la carpeta');
+    }
+
+    /**
+     * Remove a news item from a folder
+     */
+    public function removeNoticia(string $id, string $noticia_id)
+    {
+        $carpeta = \App\Models\Carpeta::where('user_id', auth()->id())
+            ->findOrFail($id);
+
+        $carpeta->noticias()->detach($noticia_id);
+
+        return response()->json(['message' => 'Noticia removida de la carpeta'], 200);
+    }
+
+    /**
+     * Carpetas del usuario en formato JSON para uso en frontend
+     */
+    public function getCarpetasJson()
+    {
+        $carpetas = \App\Models\Carpeta::where('user_id', auth()->id())
+            ->get(['id', 'nombre'])
+            ->toArray();
+
+        return response()->json($carpetas);
+    }
 }

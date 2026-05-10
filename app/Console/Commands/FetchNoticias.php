@@ -18,7 +18,7 @@ class FetchNoticias extends Command
 
     public function handle()
     {
-        
+
         $this->info('Iniciando fetch SerpApi...');
 
         $this->paisDetector = app(PaisDetectorService::class);
@@ -38,6 +38,11 @@ class FetchNoticias extends Command
             'descubrimiento arqueológico',
         ];
 
+        $temas = [
+            'Arqueologia' => 'CAAqIAgKIhpDQkFTRFFvSEwyMHZNR2cyTVJJQ1pYTW9BQVAB',
+            'Historia' => 'CAAqIQgKIhtDQkFTRGdvSUwyMHZNRE5uTTNjU0FtVnpLQUFQAQ'
+        ];
+
         foreach ($queries as $query) {
 
             $this->info("Buscando: {$query}");
@@ -45,11 +50,7 @@ class FetchNoticias extends Command
             $cacheKey = "serpapi_news_" . md5($query);
 
             $response = Cache::remember($cacheKey, 3600, function () use ($service, $query) {
-                return $service->getGoogleNews($query, [
-                    'hl' => 'es',
-                    'gl' => 'es',
-                    'so' => 1,
-                ]);
+                return $service->getGoogleNews($query);
             });
 
             $items = data_get($response, 'news_results', []);
@@ -63,14 +64,11 @@ class FetchNoticias extends Command
                 $link = strtok($originalLink, '?');
                 if (!$link) continue;
 
-                $externalId = md5($link);
-
-                // evitar duplicados
-                // if (Noticia::where('external_id', $externalId)->exists()) {
-                //     continue;
-                // }
+                $externalId = md5($this->canonicalUrl($link));
 
                 $title = $news['title'] ?? 'Sin título';
+
+                $descripcion = $news['snippet'] ?? null;
 
                 // snippet
                 $descripcion = $news['snippet'] ?? null;
@@ -94,25 +92,41 @@ class FetchNoticias extends Command
                 $thumbnail = $news['thumbnail'] ?? null;
                 $publishedAt = $news['iso_date'] ?? null;
 
+                $contentHash = md5(mb_strtolower(trim($title . ' ' . $descripcion), 'UTF-8'));
+
+                $noticia = Noticia::where('hash', $contentHash)
+                    ->orWhere(function ($query) use ($externalId) {
+                        $query->where('external_id', $externalId)
+                            ->where('source', 'serpapi');
+                    })
+                    ->first();
+
+                $data = [
+                    'hash' => $contentHash,
+                    'titulo' => $title,
+                    'descripcion' => $descripcion,
+                    'url_noticia' => $link,
+                    'url_imagen' => $thumbnail,
+                    'fecha_publicacion' => $publishedAt
+                        ? date('Y-m-d H:i:s', strtotime($publishedAt))
+                        : now(),
+                    'categoria' => 'arqueología',
+                    'pais' => $pais?->nombre,
+                    'codigo_pais' => $pais?->codigo_iso ?? null,
+                ];
+
                 try {
-                    Noticia::updateOrCreate(
-                        [
+                    if ($noticia) {
+                        $noticia->update(array_merge($data, [
                             'external_id' => $externalId,
                             'source' => 'serpapi',
-                        ],
-                        [
-                            'titulo' => $title,
-                            'descripcion' => $descripcion,
-                            'url_noticia' => $link,
-                            'url_imagen' => $thumbnail,
-                            'fecha_publicacion' => $publishedAt
-                                ? date('Y-m-d H:i:s', strtotime($publishedAt))
-                                : now(),
-                            'categoria' => 'arqueología',
-                            'pais' => $pais?->nombre,
-                            'codigo_pais' => $pais?->codigo_iso ?? null,
-                        ]
-                    );
+                        ]));
+                    } else {
+                        Noticia::create(array_merge($data, [
+                            'external_id' => $externalId,
+                            'source' => 'serpapi',
+                        ]));
+                    }
 
                     $this->info("Guardada: {$title}");
                 } catch (\Throwable $e) {
@@ -121,6 +135,25 @@ class FetchNoticias extends Command
             }
         }
 
-        $this->info('Fetch completado');
+        $this->info('Fetch completado. Noticias totales: ' . Noticia::count());
+    }
+
+    private function canonicalUrl(string $url): string
+    {
+        $url = trim($url);
+
+        $parts = parse_url($url);
+        if (!$parts || !isset($parts['host'])) {
+            return $url;
+        }
+
+        $scheme = isset($parts['scheme']) ? strtolower($parts['scheme']) : 'http';
+        $host = strtolower($parts['host']);
+        $port = isset($parts['port']) ? ':' . $parts['port'] : '';
+        $path = $parts['path'] ?? '';
+        $path = rtrim($path, '/');
+        $path = $path === '' ? '/' : $path;
+
+        return $scheme . '://' . $host . $port . $path;
     }
 }

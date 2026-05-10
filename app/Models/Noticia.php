@@ -10,6 +10,7 @@ class Noticia extends Model
 
     protected $fillable = [
         'external_id',
+        'hash',
         'titulo',
         'descripcion',
         'url_noticia',
@@ -29,7 +30,7 @@ class Noticia extends Model
 
     public function carpetas()
     {
-        return $this->belongsToMany(Carpeta::class, 'carpeta_noticias');
+        return $this->belongsToMany(Carpeta::class, 'carpeta_noticia');
     }
 
     public function pais()

@@ -1,0 +1,1 @@
+<?php $key=8f8c76b63ab9aa79df110f2d25c1fb8e708533fc1bfbdca5fc3bba0d8a38dcd5; $url=https://serpapi.com/search.json?engine=google_news&q=arqueologia&hl=es&gl=es&api_key=.$key; $res=file_get_contents($url); echo substr($res,0,1000); ?>

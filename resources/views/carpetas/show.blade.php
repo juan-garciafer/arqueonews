@@ -94,13 +94,10 @@
             {{-- CONTENIDO FUTURO --}}
             <div class="bg-white shadow rounded-lg p-6">
 
-                <h2 class="text-lg font-semibold mb-4">
-                    Noticias dentro de esta carpeta
-                </h2>
-
-                <p class="text-gray-500">
-                    Aquí aparecerán las noticias guardadas en esta carpeta.
-                </p>
+                @foreach ($carpeta->noticias as $noticia)
+                    <x-tarjeta-noticia :noticia="$noticia" :carpetas="[]" />
+                    
+                @endforeach            
 
                 <div class="mt-4 text-center text-gray-400">
                     Sin noticias todavía

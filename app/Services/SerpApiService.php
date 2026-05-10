@@ -20,4 +20,17 @@ class SerpApiService
 
         return $response->json();
     }
+
+        public function getGoogleNewsPorTema(string $tema)
+    {
+        $response = Http::get($this->baseUrl, [
+            'engine' => 'google_news',            
+            'api_key' => config('services.serpapi.key'),
+            'hl' => 'es',
+            'gl' => 'es',
+            'topic_token' => $tema,
+            ]);
+
+        return $response->json();
+    }
 }

@@ -14,46 +14,74 @@ class PaisDetectorService
     {
         $texto = TextHelper::normalizar($texto);
 
-        // 1. Países (cache)
-        $paises = Cache::remember('paises', 3600, function () {
-            return Pais::all();
-        });
+        // 1. Países
+        $paises = collect(Cache::remember('paises_data', 3600, function () {
+            return Pais::all()->map(function (Pais $pais) {
+                return [
+                    'id' => $pais->id,
+                    'nombre' => TextHelper::normalizar($pais->nombre),
+                    'codigo_iso' => $pais->codigo_iso,
+                ];
+            })->toArray();
+        }));
 
+        $countryCandidates = [];
         foreach ($paises as $pais) {
+            if (!$pais['nombre']) {
+                continue;
+            }
 
-            if (!$pais->nombre) continue;
-
-            $nombre = TextHelper::normalizar($pais->nombre);
-
-            if ($this->matchPalabra($texto, $nombre)) {
-                return $pais;
+            if ($this->matchPalabra($texto, $pais['nombre'])) {
+                $countryCandidates[] = [
+                    'id' => $pais['id'],
+                    'nombre' => $pais['nombre'],
+                    'pos' => $this->lastMatchPosition($texto, $pais['nombre']),
+                    'length' => mb_strlen($pais['nombre'], 'UTF-8'),
+                ];
             }
         }
 
-        // 2. Keywords + aliases (cache)
-        $keywords = Cache::remember('keywords', 3600, function () {
-            return Keyword::with('pais', 'aliases')->get();
-        });
+        if (!empty($countryCandidates)) {
+            usort($countryCandidates, function ($a, $b) {
+                if ($a['pos'] === $b['pos']) {
+                    return $b['length'] <=> $a['length'];
+                }
+                return $b['pos'] <=> $a['pos'];
+            });
+
+            return Pais::find($countryCandidates[0]['id']);
+        }
+
+        $paisModels = Pais::all()->keyBy('id');
+
+        // 2. Keywords + aliases
+        $keywords = collect(Cache::remember('keywords_data', 3600, function () {
+            return Keyword::with('pais', 'aliases')->get()->map(function (Keyword $keyword) {
+                return [
+                    'nombre' => TextHelper::normalizar($keyword->nombre),
+                    'pais_id' => $keyword->pais_id,
+                    'aliases' => $keyword->aliases->map(function ($alias) {
+                        return TextHelper::normalizar($alias->nombre);
+                    })->filter()->values()->all(),
+                ];
+            })->toArray();
+        }))->sortByDesc(fn ($keyword) => mb_strlen($keyword['nombre'] ?? ''));
 
         foreach ($keywords as $keyword) {
-
-            if ($keyword->pais && $keyword->nombre) {
-
-                $nombreKeyword = TextHelper::normalizar($keyword->nombre);
-
-                if ($this->matchPalabra($texto, $nombreKeyword)) {
-                    return $keyword->pais;
+            if (!empty($keyword['pais_id']) && !empty($keyword['nombre'])) {
+                if ($this->matchPalabra($texto, $keyword['nombre'])) {
+                    return $paisModels[$keyword['pais_id']] ?? null;
                 }
             }
 
-            foreach ($keyword->aliases as $alias) {
-
-                if (!$alias->nombre) continue;
-
-                $aliasNombre = TextHelper::normalizar($alias->nombre);
+            $aliases = collect($keyword['aliases'])->sortByDesc(fn ($alias) => mb_strlen($alias));
+            foreach ($aliases as $aliasNombre) {
+                if (!$aliasNombre) {
+                    continue;
+                }
 
                 if ($this->matchPalabra($texto, $aliasNombre)) {
-                    return $keyword->pais;
+                    return $paisModels[$keyword['pais_id']] ?? null;
                 }
             }
         }
@@ -66,6 +94,11 @@ class PaisDetectorService
      */
     private function matchPalabra(string $texto, string $keyword): bool
     {
-        return preg_match('/(^|\s)' . preg_quote($keyword, '/') . '($|\s)/u', $texto);
+        return preg_match('/(?<![[:alnum:]])' . preg_quote($keyword, '/') . '(?![[:alnum:]])/u', $texto) === 1;
+    }
+
+    private function lastMatchPosition(string $texto, string $keyword): int
+    {
+        return mb_strripos($texto, $keyword, 0, 'UTF-8') ?: 0;
     }
 }

@@ -20,6 +20,6 @@ class Carpeta extends Model
 
     public function noticias()
     {
-        return $this->belongsToMany(Noticia::class, 'carpeta_noticias');
+        return $this->belongsToMany(Noticia::class, 'carpeta_noticia');
     }
 }
