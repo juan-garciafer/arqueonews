@@ -15,7 +15,7 @@
 
         {{-- Noticias --}}
 
-         <a href="{{ route('noticias.index') }}" class="block px-3 py-2 rounded text-white hover:bg-[#4b613c]">
+        <a href="{{ route('noticias.index') }}" class="block px-3 py-2 rounded text-white hover:bg-[#4b613c]">
             📰 Noticias
         </a>
 
@@ -28,7 +28,7 @@
         {{-- Crear carpeta --}}
         <a href="{{ route('carpetas.create') }}" class="block px-3 py-2 rounded text-white hover:bg-[#4b613c]">
             ➕ Nueva carpeta
-        </a>        
+        </a>
 
     </nav>
 
@@ -40,29 +40,24 @@
 
             <form action="{{ route('noticias.index') }}" method="GET" class="space-y-3">
                 <div>
-                    <label for="filtro_fecha" class="mb-1 block text-xs text-[#d6e0cf]">Fecha</label>
-                    <input
-                        id="filtro_fecha"
-                        name="fecha"
-                        type="date"
-                        value="{{ $filtros['fecha'] ?? '' }}"
-                        class="w-full rounded border-[#4b613c] bg-white/95 text-sm text-gray-800 focus:border-[#606E8C] focus:ring-[#606E8C]"
-                    >
+                    <label for="orden_fecha" class="mb-1 block text-xs text-[#d6e0cf]">Ordenar por fecha</label>
+                    <select id="orden_fecha" name="orden"
+                        class="w-full rounded border-[#4b613c] bg-white/95 text-sm text-gray-800 focus:border-[#606E8C] focus:ring-[#606E8C]">
+                        <option value="desc" {{ ($filtros['orden'] ?? 'desc') === 'desc' ? 'selected' : '' }}>Más
+                            recientes primero</option>
+                        <option value="asc" {{ ($filtros['orden'] ?? '') === 'asc' ? 'selected' : '' }}>Más antiguas
+                            primero</option>
+                    </select>
                 </div>
 
                 <div>
-                    <label for="filtro_pais" class="mb-1 block text-xs text-[#d6e0cf]">Pais</label>
-                    <select
-                        id="filtro_pais"
-                        name="pais"
-                        class="w-full rounded border-[#4b613c] bg-white/95 text-sm text-gray-800 focus:border-[#606E8C] focus:ring-[#606E8C]"
-                    >
-                        <option value="">Todos</option>
+                    <label for="filtro_pais" class="mb-1 block text-xs text-[#d6e0cf]">País</label>
+                    <select id="filtro_pais" name="pais"
+                        class="w-full rounded border-[#4b613c] bg-white/95 text-sm text-gray-800 focus:border-[#606E8C] focus:ring-[#606E8C]">
+                        <option value="">Todos los países</option>
                         @foreach ($paisesFiltro as $pais)
-                            <option
-                                value="{{ strtoupper($pais->codigo_iso) }}"
-                                @selected(($filtros['pais'] ?? '') === strtoupper($pais->codigo_iso))
-                            >
+                            <option value="{{ $pais->nombre }}"
+                                {{ ($filtros['pais'] ?? '') == $pais->nombre ? 'selected' : '' }}>
                                 {{ $pais->nombre }}
                             </option>
                         @endforeach
@@ -70,15 +65,19 @@
                 </div>
 
                 <div class="flex gap-2">
-                    <button type="submit" class="flex-1 rounded px-3 py-2 text-sm font-semibold text-white">
-                        Aplicar
+                    <button type="submit"
+                        class="flex-1 rounded bg-[#4b613c] px-3 py-2 text-sm font-semibold text-white hover:bg-[#3a4d2f]">
+                        Aplicar filtros
                     </button>
-                    <a href="{{ route('noticias.index') }}" class="rounded px-3 py-2 text-sm font-semibold text-white">
+                    <a href="{{ route('noticias.index') }}"
+                        class="rounded bg-gray-600 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-700">
                         Limpiar
                     </a>
                 </div>
             </form>
         </div>
     @endif
+
+
 
 </div>

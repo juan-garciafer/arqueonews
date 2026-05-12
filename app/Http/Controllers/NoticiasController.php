@@ -11,62 +11,33 @@ class NoticiasController extends Controller
     public function index(Request $request)
     {
         $filtros = [
-            'fecha' => $request->query('fecha'),
-            'pais' => strtoupper((string) $request->query('pais', '')),
+            'orden' => $request->get('orden', 'desc'),
+            'pais' => $request->get('pais'),
         ];
 
-        $baseQuery = Noticia::query();
+        $noticias = Noticia::query();
 
-        if (!empty($filtros['fecha'])) {
-            $baseQuery->whereDate('fecha_publicacion', $filtros['fecha']);
-        }
-
+        // Filtrar por país (usando el campo 'pais')
         if (!empty($filtros['pais'])) {
-            $baseQuery->whereRaw('UPPER(codigo_pais) = ?', [$filtros['pais']]);
+            $noticias->where('pais', $filtros['pais']);
         }
 
+        // Ordenar por fecha
+        $noticias->orderBy('fecha_publicacion', $filtros['orden']);
 
         $vista = request()->query('vista', 'compacta');
+        $noticias = $noticias->paginate($vista === 'compacta' ? 4 : 10)->withQueryString();
 
-        $noticias = (clone $baseQuery)
-            ->orderBy('fecha_publicacion', 'desc')
-            ->paginate($vista === 'compacta' ? 4 : 10)
-            ->withQueryString();
+        // Obtener países únicos de las noticias (del campo 'pais')
+        $paisesFiltro = Noticia::whereNotNull('pais')
+            ->where('pais', '!=', '')
+            ->distinct()
+            ->orderBy('pais')
+            ->pluck('pais')
+            ->map(fn($pais) => (object) ['nombre' => $pais, 'codigo_iso' => $pais]);
 
-        $paises = Pais::all()->keyBy(fn($p) => strtoupper($p->codigo_iso));
-
-        $markers = (clone $baseQuery)
-            ->get()
-            ->filter(fn($n) => $n->codigo_pais)
-            ->groupBy(fn($n) => strtoupper($n->codigo_pais))
-            ->map(function ($group, $codigo) use ($paises) {
-
-                $pais = $paises[$codigo] ?? null;
-
-                if (!$pais || !$pais->lat || !$pais->lng) {
-                    return null;
-                }
-
-                return [
-                    'id' => $pais->id,
-                    'lat' => $pais->lat,
-                    'lng' => $pais->lng,
-                    'nombre' => $pais->nombre,
-                    'count' => $group->count(),
-
-                    'noticias' => $group->map(fn($n) => [
-                        'id' => $n->id,
-                        'titulo' => $n->titulo,
-                        'descripcion' => $n->descripcion,
-                        'url' => $n->url_noticia,
-                        'imagen' => $n->url_imagen,
-                    ])->values()->toArray(),
-                ];
-            })
-            ->filter()
-            ->values();
-
-        // dd($markers);
+        // Si necesitas marcadores para el mapa
+        $markers = collect(); // O implementa según necesites
 
         $carpetas = auth()->check()
             ? \App\Models\Carpeta::where('user_id', auth()->id())->get()
@@ -74,17 +45,17 @@ class NoticiasController extends Controller
 
         return view('noticias.index', [
             'noticias' => $noticias,
-            'markers' => $markers ?? collect(),
+            'markers' => $markers,
             'carpetas' => $carpetas,
             'filtros' => $filtros,
-            'paisesFiltro' => $paises->sortBy('nombre')->values(),
+            'paisesFiltro' => $paisesFiltro,
         ]);
     }
 
     public function porPais(Pais $pais)
     {
         $noticias = Noticia::query()
-            ->whereRaw('UPPER(codigo_pais) = ?', [strtoupper((string) $pais->codigo_iso)])
+            ->where('codigo_pais', $pais->codigo_iso)
             ->orderBy('fecha_publicacion', 'desc')
             ->paginate(10);
 
@@ -97,5 +68,35 @@ class NoticiasController extends Controller
             'noticias' => $noticias,
             'carpetas' => $carpetas,
         ]);
+    }
+
+    public function edit(Noticia $noticia)
+    {
+        return view('noticias.edit', [
+            'noticia' => $noticia,
+        ]);
+    }
+
+    public function update(Request $request, Noticia $noticia)
+    {
+        $request->validate([
+            'titulo' => 'required|string|max:255',
+            'descripcion' => 'nullable|string',
+            'url_noticia' => 'required|url|max:255',
+            'url_imagen' => 'nullable|url|max:255',
+            'pais' => 'nullable|string|max:255',
+            'categoria' => 'nullable|string|max:255',
+        ]);
+
+        $noticia->update([
+            'titulo' => $request->titulo,
+            'descripcion' => $request->descripcion,
+            'url_noticia' => $request->url_noticia,
+            'url_imagen' => $request->url_imagen,
+            'pais' => $request->pais,
+            'categoria' => $request->categoria,
+        ]);
+
+        return redirect()->route('noticias.index')->with('success', 'Noticia actualizada correctamente.');
     }
 }

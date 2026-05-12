@@ -1,9 +1,10 @@
 <x-app-layout>
     {{-- {{ dd('ESTOY EN LA VISTA CORRECTA', $markers ?? null) }} --}}
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+        {{-- <h2 class="font-semibold text-xl text-gray-800 leading-tight mx-auto">
             {{ __('Noticias') }}
-        </h2>
+        </h2> --}}
+        <x-barra-busqueda />
     </x-slot>
     
     @php
