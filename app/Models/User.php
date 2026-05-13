@@ -47,4 +47,16 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function noticiasLikeadas()
+    {
+        return $this->belongsToMany(Noticia::class, 'noticias_likes')
+            ->withTimestamps();
+    }
+
+    public function noticiasVisitadas()
+    {
+        return $this->belongsToMany(Noticia::class, 'noticias_visitas')
+            ->withTimestamps();
+    }
 }

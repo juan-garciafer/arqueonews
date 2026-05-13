@@ -37,4 +37,15 @@ class Noticia extends Model
     {
         return $this->belongsTo(Pais::class, 'codigo_pais', 'codigo_iso');
     }
+
+    public function visitas()
+    {
+        return $this->hasMany(NoticiaVisita::class);
+    }
+
+    public function likes()
+    {
+        return $this->belongsToMany(User::class, 'noticias_likes')  // ← Asegúrate que diga noticias_likes
+            ->withTimestamps();
+    }
 }

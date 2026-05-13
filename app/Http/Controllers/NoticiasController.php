@@ -27,6 +27,11 @@ class NoticiasController extends Controller
         // Ordenar por fecha
         $noticias->orderBy('fecha_publicacion', $filtros['orden']);
 
+        $noticias->withCount('likes')
+            ->withExists(['likes as liked_by_user' => function ($query) {
+                $query->where('user_id', auth()->id());
+            }]);
+
         $vista = request()->query('vista', 'compacta');
         $noticias = $noticias->paginate($vista === 'compacta' ? 4 : 10)->withQueryString();
 
@@ -87,6 +92,10 @@ class NoticiasController extends Controller
         $noticias = Noticia::query()
             ->where('codigo_pais', $pais->codigo_iso)
             ->orderBy('fecha_publicacion', 'desc')
+            ->withCount('likes')
+            ->withExists(['likes as liked_by_user' => function ($query) {
+                $query->where('user_id', auth()->id());
+            }])
             ->paginate(10);
 
         $carpetas = auth()->check()
@@ -128,5 +137,56 @@ class NoticiasController extends Controller
         ]);
 
         return redirect()->route('noticias.index')->with('success', 'Noticia actualizada correctamente.');
+    }
+
+    public function visitar(Noticia $noticia, Request $request)
+    {
+        //Datos del usuario visitante
+        $userId = auth()->check() ? auth()->id() : null;
+        $ip = $request->ip();
+        $userAgent = $request->userAgent();
+
+        //Token para usuarios no registrados (hash de IP + User Agent)
+        $tokenInvitado = $userId ? null : md5($ip . $userAgent);
+
+        //Registrar la visita
+        $noticia->visitas()->create([
+            'user_id' => $userId,
+            'token_invitado' => $tokenInvitado,
+            'direccion_ip' => $ip,
+        ]);
+
+        return redirect()->away($noticia->url_noticia);
+    }
+
+    public function toggleLike(Noticia $noticia)
+    {
+        try {
+            $user = auth()->user();
+
+            if (!$user) {
+                return response()->json(['error' => 'Debes iniciar sesión.'], 401);
+            }
+
+            $existing = $user->noticiasLikeadas()->where('noticia_id', $noticia->id)->first();
+
+            if ($existing) {
+                $existing->delete();
+                $liked = false;
+            } else {
+                $user->noticiasLikeadas()->attach($noticia->id);
+                $liked = true;
+            }
+
+            $likesCount = $noticia->likes()->count();
+
+            return response()->json([
+                'liked' => $liked,
+                'likes_count' => $likesCount,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error al dar like: ' . $e->getMessage());
+            return response()->json(['error' => 'Error interno del servidor.'], 500);
+        }
     }
 }
