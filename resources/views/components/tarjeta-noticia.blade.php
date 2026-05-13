@@ -3,7 +3,7 @@
 <div class="tarjeta-noticia h-full flex flex-col overflow-visible">
     <!-- Título-->
     <div class="flex-shrink-0">
-        <h2 class="text-lg font-semibold text-gray-800 hover:text-blue-600 leading-tight" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+        <h2 class="text-xl font-semibold text-gray-800 hover:text-blue-600 leading-tight" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
             <a href="{{ $noticia->url_noticia }}" target="_blank" class="hover:underline">
                 {{ $noticia->titulo }}
             </a>
@@ -26,7 +26,7 @@
 
     <!-- Descripción + botones -->
     <div class="mt-auto flex flex-col gap-2">
-        <p class="text-gray-700 text-sm leading-snug" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ $noticia->descripcion }}</p>
+        <p class="text-gray-700 text-lg leading-snug" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{{ $noticia->descripcion }}</p>
         @if ($noticia->pais)
             <p class="text-xs text-gray-500">País: {{ $noticia->pais }}</p>
         @else

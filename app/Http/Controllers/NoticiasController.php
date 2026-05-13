@@ -17,6 +17,8 @@ class NoticiasController extends Controller
 
         $noticias = Noticia::query();
 
+        $paises = Pais::all()->keyBy(fn($p) => strtoupper($p->codigo_iso));
+
         // Filtrar por país (usando el campo 'pais')
         if (!empty($filtros['pais'])) {
             $noticias->where('pais', $filtros['pais']);
@@ -36,8 +38,33 @@ class NoticiasController extends Controller
             ->pluck('pais')
             ->map(fn($pais) => (object) ['nombre' => $pais, 'codigo_iso' => $pais]);
 
-        // Si necesitas marcadores para el mapa
-        $markers = collect(); // O implementa según necesites
+        $markers = Noticia::all()
+            ->filter(fn($n) => $n->codigo_pais)
+            ->groupBy(fn($n) => strtoupper($n->codigo_pais))
+            ->map(function ($group, $codigo) use ($paises) {
+
+                $pais = $paises[$codigo] ?? null;
+
+                if (!$pais || $pais->lat === null || $pais->lng === null) {
+                    return null;
+                }
+                return [
+                    'id' => $pais->id,
+                    'lat' => $pais->lat,
+                    'lng' => $pais->lng,
+                    'nombre' => $pais->nombre,
+                    'count' => $group->count(),
+
+                    'noticias' => $group->map(fn($n) => [
+                        'titulo' => $n->titulo,
+                        'descripcion' => $n->descripcion,
+                        'url' => $n->url_noticia,
+                        'imagen' => $n->url_imagen,
+                    ])->values()->toArray(),
+                ];
+            })
+            ->filter()
+            ->values();
 
         $carpetas = auth()->check()
             ? \App\Models\Carpeta::where('user_id', auth()->id())->get()
@@ -51,6 +78,9 @@ class NoticiasController extends Controller
             'paisesFiltro' => $paisesFiltro,
         ]);
     }
+
+
+
 
     public function porPais(Pais $pais)
     {
