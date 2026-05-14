@@ -33,9 +33,9 @@ class PaisDetectorService
 
             if ($this->matchPalabra($texto, $pais['nombre'])) {
                 $countryCandidates[] = [
-                    'id' => $pais['id'],
+                    'id'     => $pais['id'],
                     'nombre' => $pais['nombre'],
-                    'pos' => $this->lastMatchPosition($texto, $pais['nombre']),
+                    'pos'    => $this->firstMatchPosition($texto, $pais['nombre']),
                     'length' => mb_strlen($pais['nombre'], 'UTF-8'),
                 ];
             }
@@ -43,10 +43,12 @@ class PaisDetectorService
 
         if (!empty($countryCandidates)) {
             usort($countryCandidates, function ($a, $b) {
-                if ($a['pos'] === $b['pos']) {
-                    return $b['length'] <=> $a['length'];
+                // Primero la posición más temprana (menor valor)
+                if ($a['pos'] !== $b['pos']) {
+                    return $a['pos'] <=> $b['pos'];
                 }
-                return $b['pos'] <=> $a['pos'];
+                // A igual posición, la coincidencia más larga
+                return $b['length'] <=> $a['length'];
             });
 
             return Pais::find($countryCandidates[0]['id']);
@@ -65,7 +67,7 @@ class PaisDetectorService
                     })->filter()->values()->all(),
                 ];
             })->toArray();
-        }))->sortByDesc(fn ($keyword) => mb_strlen($keyword['nombre'] ?? ''));
+        }))->sortByDesc(fn($keyword) => mb_strlen($keyword['nombre'] ?? ''));
 
         foreach ($keywords as $keyword) {
             if (!empty($keyword['pais_id']) && !empty($keyword['nombre'])) {
@@ -74,7 +76,7 @@ class PaisDetectorService
                 }
             }
 
-            $aliases = collect($keyword['aliases'])->sortByDesc(fn ($alias) => mb_strlen($alias));
+            $aliases = collect($keyword['aliases'])->sortByDesc(fn($alias) => mb_strlen($alias));
             foreach ($aliases as $aliasNombre) {
                 if (!$aliasNombre) {
                     continue;
@@ -97,8 +99,14 @@ class PaisDetectorService
         return preg_match('/(?<![[:alnum:]])' . preg_quote($keyword, '/') . '(?![[:alnum:]])/u', $texto) === 1;
     }
 
-    private function lastMatchPosition(string $texto, string $keyword): int
+    // private function lastMatchPosition(string $texto, string $keyword): int
+    // {
+    //     return mb_strripos($texto, $keyword, 0, 'UTF-8') ?: 0;
+    // }
+
+    private function firstMatchPosition(string $texto, string $keyword): int
     {
-        return mb_strripos($texto, $keyword, 0, 'UTF-8') ?: 0;
+        $pos = mb_stripos($texto, $keyword, 0, 'UTF-8');
+        return $pos !== false ? $pos : PHP_INT_MAX;
     }
 }

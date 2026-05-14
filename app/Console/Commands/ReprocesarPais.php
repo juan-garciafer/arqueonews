@@ -40,19 +40,26 @@ class ReprocesarPais extends Command
         $updated = 0;
         $processed = 0;
 
-        $query->chunk(100, function ($noticias) use (&$updated, &$processed) {
+        $query->chunkById(100, function ($noticias) use (&$updated, &$processed) {
             foreach ($noticias as $noticia) {
                 $texto = trim(($noticia->titulo ?? '') . ' ' . ($noticia->descripcion ?? ''));
                 if ($texto === '') {
                     continue;
                 }
 
-                $pais = $this->paisDetector->detectarPais($texto);
-                $processed++;
+                try {
+                    $pais = $this->paisDetector->detectarPais($texto);
+                } catch (\Throwable $e) {
+                    $this->error("Error en noticia {$noticia->id}: " . $e->getMessage());
+                    continue;
+                }
 
+                // ✅ Verificar si se detectó país
                 if (!$pais) {
                     continue;
                 }
+
+                $processed++;
 
                 $needsUpdate = $this->option('all')
                     ? ($noticia->pais !== $pais->nombre || $noticia->codigo_pais !== $pais->codigo_iso)
